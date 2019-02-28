@@ -1,7 +1,7 @@
 var request = require("request");
 
-function pdbStringToPdbDict(pdbString) {
-  let pdbDict = {}
+function pdbStringToPdbObject(pdbString) {
+  let pdbObject = {}
   let lines = [];
   for (var line of pdbString.split("\n")) {
       lines.push([line.slice(0, 6).trimEnd(), line.trimEnd()]);
@@ -11,38 +11,40 @@ function pdbStringToPdbDict(pdbString) {
   let in_model = false;
   for (var line of lines) {
     if (line[0] == "REMARK") {
-      if (!("REMARK" in pdbDict)) {pdbDict.REMARK = {}}
+      if (!("REMARK" in pdbObject)) {pdbObject.REMARK = {}}
       let number = line[1].trim().split(" ")[0];
-      try {
-        pdbDict.REMARK[number].push(line[1]);
-      } catch(err) {
-        pdbDict.REMARK[number] = [line[1]];
-      }
+      updatePdbObject(pdbObject.REMARK, number, line[1]);
     } else if (modelRecs.includes(line[0])) {
-      if (!("MODEL" in pdbDict)) {pdbDict.MODEL = [[]]}
+      if (!("MODEL" in pdbObject)) {pdbObject.MODEL = [[]]}
       if (line[0] == "ENDMDL") {
-        pdbDict.MODEL.push([])
+        pdbObject.MODEL.push([])
       } else if (line[0] != "MODEL") {
-        pdbDict.MODEL[pdbDict.MODEL.length - 1].push(line[1])
+        pdbObject.MODEL[pdbObject.MODEL.length - 1].push(line[1])
       }
     } else {
-      try {
-        pdbDict[line[0]].push(line[1]);
-      } catch(err) {
-        pdbDict[line[0]] = [line[1]];
-      }
+      updatePdbObject(pdbObject, line[0], line[1]);
     }
   }
-  return pdbDict;
+  return pdbObject;
 }
+
+
+function updatePdbObject(obj, key, value) {
+  try {
+    obj[key].push(value);
+  } catch(err) {
+    obj[key] = [value];
+  }
+}
+
 
 function fetch(code, callback) {
   request("https://files.rcsb.org/view/" + code + ".pdb", (err, res, body) => {
     if (err) {
       return console.log(err);
     }
-    let pdbDict = pdbStringToPdbDict(body)
-    callback(pdbDict)
+    let pdbObject = pdbStringToPdbObject(body)
+    callback(pdbObject)
   });
 }
 
