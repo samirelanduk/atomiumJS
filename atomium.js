@@ -38,13 +38,28 @@ function updatePdbObject(obj, key, value) {
 }
 
 
+function pdbObjectToDataObject(pdbObject) {
+  dataObject = {
+   "description": {
+    "code": null, "title": null, "depositionDate": null,
+    "classification": null, "keywords": [], "authors": []
+   }, "experiment": {
+    "technique": null, "sourceOrganism": null, "expressionSystem": null
+   }, "quality": {"resolution": null, "rvalue": null, "rfree": null},
+   "geometry": {"assemblies": []}, "models": []
+  }
+  return dataObject;
+}
+
+
 function fetch(code, callback) {
   request("https://files.rcsb.org/view/" + code + ".pdb", (err, res, body) => {
     if (err) {
       return console.log(err);
     }
-    let pdbObject = pdbStringToPdbObject(body)
-    callback(pdbObject)
+    let pdbObject = pdbStringToPdbObject(body);
+    let dataObject = pdbObjectToDataObject(pdbObject);
+    callback(dataObject)
   });
 }
 
