@@ -48,7 +48,49 @@ function pdbObjectToDataObject(pdbObject) {
    }, "quality": {"resolution": null, "rvalue": null, "rfree": null},
    "geometry": {"assemblies": []}, "models": []
   }
+  updateDescriptionObject(pdbObject, dataObject)
   return dataObject;
+}
+
+
+function mergeLines(lines, start, join=" ") {
+  let string = "";
+  for (line of lines) {
+    string += (line.slice(start).trim() + join);
+  }
+  string = string.slice(0, string.length - join.length);
+  return string;
+}
+
+
+function updateDescriptionObject(pdbObject, dataObject) {
+  if ("HEADER" in pdbObject) {
+    let line = pdbObject.HEADER[0]
+    if (line.slice(50, 59).trim()) {
+      dataObject.description.depositionDate = Date.parse(line.slice(50, 59).trim())
+    }
+    if (line.slice(62, 66).trim()) {
+      dataObject.description.code = line.slice(62, 66)
+    }
+    if (line.slice(10, 50).trim()) {
+      dataObject.description.classification = line.slice(10, 50).trim()
+    }
+  }
+  if ("TITLE" in pdbObject) {
+    dataObject.description.title = mergeLines(pdbObject.TITLE, 10)
+  }
+  if ("KEYWDS" in pdbObject) {
+    let text = mergeLines(pdbObject.KEYWDS, 10);
+    for (keyword of text.split(",")) {
+      dataObject.description.keywords.push(keyword.trim())
+    }
+  }
+  if ("AUTHOR" in pdbObject) {
+    let text = mergeLines(pdbObject.AUTHOR, 10);
+    for (author of text.split(",")) {
+      dataObject.description.authors.push(author.trim())
+    }
+  }
 }
 
 
