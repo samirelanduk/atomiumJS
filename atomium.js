@@ -48,7 +48,8 @@ function pdbObjectToDataObject(pdbObject) {
    }, "quality": {"resolution": null, "rvalue": null, "rfree": null},
    "geometry": {"assemblies": []}, "models": []
   }
-  updateDescriptionObject(pdbObject, dataObject)
+  updateDescriptionObject(pdbObject, dataObject);
+  updateExperimentObject(pdbObject, dataObject);
   return dataObject;
 }
 
@@ -89,6 +90,27 @@ function updateDescriptionObject(pdbObject, dataObject) {
     let text = mergeLines(pdbObject.AUTHOR, 10);
     for (author of text.split(",")) {
       dataObject.description.authors.push(author.trim())
+    }
+  }
+}
+
+function updateExperimentObject(pdbObject, dataObject) {
+  if ("EXPDTA" in pdbObject) {
+    if (pdbObject.EXPDTA[0].slice(6).trim()) {
+      dataObject.experiment.technique = pdbObject.EXPDTA[0].slice(6).trim()
+    }
+  }
+  if ("SOURCE" in pdbObject) {
+    let text = mergeLines(pdbObject.SOURCE, 10);
+    patterns = {
+     "sourceOrganism": /ORGANISM_SCIENTIFIC\: (.+?);/,
+     "expressionSystem": /EXPRESSION_SYSTEM\: (.+?);/
+    }
+    for (key of Object.keys(patterns)) {
+      let matches = patterns[key].exec(text);
+      if (matches) {
+        dataObject.experiment[key] = matches[1];
+      }
     }
   }
 }
