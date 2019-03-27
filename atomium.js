@@ -12,7 +12,7 @@ function pdbStringToPdbObject(pdbString) {
   for (var line of lines) {
     if (line[0] == "REMARK") {
       if (!("REMARK" in pdbObject)) {pdbObject.REMARK = {}}
-      let number = line[1].trim().split(" ")[0];
+      let number = line[1].slice(6).trim().split(" ")[0];
       updatePdbObject(pdbObject.REMARK, number, line[1]);
     } else if (modelRecs.includes(line[0])) {
       if (!("MODEL" in pdbObject)) {pdbObject.MODEL = [[]]}
@@ -50,6 +50,7 @@ function pdbObjectToDataObject(pdbObject) {
   }
   updateDescriptionObject(pdbObject, dataObject);
   updateExperimentObject(pdbObject, dataObject);
+  updateQualityObject(pdbObject, dataObject);
   return dataObject;
 }
 
@@ -94,6 +95,7 @@ function updateDescriptionObject(pdbObject, dataObject) {
   }
 }
 
+
 function updateExperimentObject(pdbObject, dataObject) {
   if ("EXPDTA" in pdbObject) {
     if (pdbObject.EXPDTA[0].slice(6).trim()) {
@@ -110,6 +112,36 @@ function updateExperimentObject(pdbObject, dataObject) {
       let matches = patterns[key].exec(text);
       if (matches) {
         dataObject.experiment[key] = matches[1];
+      }
+    }
+  }
+}
+
+
+function updateQualityObject(pdbObject, dataObject) {
+  if ("REMARK" in pdbObject) {
+    if ("2" in pdbObject.REMARK) {
+      for (line of pdbObject.REMARK["2"]) {
+        try {
+          dataObject.quality.resolution = parseFloat(
+            /RESOLUTION\.\s+(.+?) ANGSTROMS/.exec(line)[1]
+          );
+          break;
+        } catch(error) {}
+      }
+    }
+    if ("3" in pdbObject.REMARK) {
+      patterns = {
+       "rvalue": /R VALUE[ ]{2,}\(WORKING SET\) : (.+)/,
+       "rfree": /FREE R VALUE[ ]{2,}: (.+)/
+      }
+      for (key of Object.keys(patterns)) {
+        for (line of pdbObject.REMARK["3"]) {
+          let matches = patterns[key].exec(line);
+          if (matches) {
+            dataObject.quality[key] = parseFloat(matches[1]);
+          }
+        }
       }
     }
   }
